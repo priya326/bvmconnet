@@ -3,7 +3,6 @@ import Image from "next/image";
 import Pagination from "@/components/Pagination";
 import { clubData } from "@/lib/data";
 import ClubCards from "@/components/ClubCards";
-import Link from "next/link";
 import FormModal from "@/components/FormModal";
 type Club = {
   clubId: number;
