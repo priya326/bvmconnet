@@ -1,5 +1,7 @@
 // TEMPORARY DATA
 
+import { permission } from "process";
+
 export let role = "admin";
 
 export const facultyData = [
@@ -124,6 +126,8 @@ export const eventData = [
     club: "CSI",
     date: "1-1-2024",
     report: true, 
+    letter: true,
+    permission: false,
   },
   {
     id: 2,
@@ -131,6 +135,8 @@ export const eventData = [
     club: "IEEE",
     date: "1-1-2024",
     report: true, 
+    letter: true,
+    permission: true,
   },
   {
     id: 3,
@@ -138,6 +144,8 @@ export const eventData = [
     club: "GFG",
     date: "1-1-2024",
     report: false, 
+    letter: true,
+    permission: false,
   },
   {
     id: 4,
@@ -145,6 +153,8 @@ export const eventData = [
     club: "CSI",
     date: "1-1-2024",
     report: true, 
+    letter: true,
+    permission: true,
   },
   {
     id: 5,
@@ -152,5 +162,7 @@ export const eventData = [
     club: "BYTE club",
     date: "1-1-2024",
     report: true, 
+    letter: true,
+    permission: false,
   },
 ];

@@ -1,42 +1,46 @@
-import { FieldError, useForm } from "react-hook-form";
+// SelectField.tsx
+import React from "react";
+
+type Option = {
+  value: string | number;
+  label: string;
+};
 
 type SelectFieldProps = {
   label: string;
-  register: any;
   name: string;
-  options: { value: string; label: string }[];
-  defaultValue?: string;
-  error?: FieldError;
-  selectProps?: React.SelectHTMLAttributes<HTMLSelectElement>;
+  options: Option[];
+  register: any; // Replace 'any' with a more specific type if possible
+  onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 };
 
-const SelectField = ({
+const SelectField: React.FC<SelectFieldProps> = ({
   label,
-  register,
   name,
   options,
-  defaultValue,
-  error,
-  selectProps,
-}: SelectFieldProps) => {
+  register,
+  onChange,
+}) => {
   return (
-    <div className="flex flex-col gap-2 w-full md:w-1/4">
-      <label className="text-xs text-gray-500">{label}</label>
+    <div>
+      <label htmlFor={name} className="text-xs text-gray-500">
+        {label}
+      </label>
       <select
+        id={name}
         {...register(name)}
         className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-        {...selectProps}
-        defaultValue={defaultValue}
+        onChange={onChange}
       >
+        <option value="" className="capitalize">
+          Select {label}
+        </option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
       </select>
-      {error?.message && (
-        <p className="text-xs text-red-700">{error?.message.toString()}</p>
-      )}
     </div>
   );
 };

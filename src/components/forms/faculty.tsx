@@ -4,6 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import InputField from "../InputField";
+import { addClub } from "@/lib/api_urls"; // Adjust this to the appropriate API URL
+
+// Define validation schema using Zod
 const schema = z.object({
   name: z.string().min(1, { message: "Required" }),
   email: z.string().email({ message: "Invalid email address" }),
@@ -11,29 +14,40 @@ const schema = z.object({
   dept: z.string().min(1, { message: "Required" }),
 });
 
-type Inputs = z.infer<typeof schema>;
+// Infer the types from the Zod schema
+type FacultyFormData = z.infer<typeof schema>;
 
-const Faculty = ({ type, data }: { type: "create" | "update"; data?: any }) => {
+const Faculty = ({
+  type,
+  data,
+  onSubmit,
+}: {
+  type: "create" | "update";
+  data?: FacultyFormData;
+  onSubmit: (formData: FacultyFormData) => void;
+}) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<Inputs>({
+  } = useForm<FacultyFormData>({
     resolver: zodResolver(schema),
+    defaultValues: data || { name: "", email: "", club: "", dept: "" },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    console.log(data);
+  // Handle form submission
+  const submitForm = handleSubmit((formData) => {
+    onSubmit(formData); // Pass data to parent component's onSubmit handler
   });
 
   return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
+    <form className="flex flex-col gap-8" onSubmit={submitForm}>
       <h1 className="text-xl font-semibold">
         {type === "create"
           ? "Create a new faculty coordinator"
           : "Update Faculty Coordinator Details"}
       </h1>
-      <div className="flex flex-wrap gap-5 w-full items-center justify-between ">
+      <div className="flex flex-wrap gap-5 w-full items-center justify-between">
         <InputField
           label="Name"
           name="name"
@@ -43,7 +57,7 @@ const Faculty = ({ type, data }: { type: "create" | "update"; data?: any }) => {
         />
         <InputField
           label="Email"
-          name="name"
+          name="email"
           type="email"
           defaultValue={data?.email}
           register={register}
