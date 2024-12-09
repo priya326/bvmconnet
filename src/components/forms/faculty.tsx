@@ -35,9 +35,8 @@ const Faculty = ({
     defaultValues: data || { name: "", email: "", club: "", dept: "" },
   });
 
-  // Handle form submission
   const submitForm = handleSubmit((formData) => {
-    onSubmit(formData); // Pass data to parent component's onSubmit handler
+    onSubmit(formData);
   });
 
   return (

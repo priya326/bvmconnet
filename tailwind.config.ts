@@ -19,7 +19,8 @@ const config: Config = {
           third:"#628bc5",
           fourth:"#8ab0ee",
           light:"#b2d8ff",
-          sixth:"#9fadbd"
+          sixth:"#9fadbd",
+          green:"#56ae57 "
       },
     },
   },

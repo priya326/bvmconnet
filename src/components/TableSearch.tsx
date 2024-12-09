@@ -1,5 +1,11 @@
 import Image from "next/image";
-const TableSearch = () => {
+const TableSearch = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) => {
   return (
     <div className="">
       {" "}
@@ -9,6 +15,8 @@ const TableSearch = () => {
           type="text"
           placeholder="Search..."
           className="w-[200px] p-2 bg-transparent outline-none"
+          value={value}
+          onChange={onChange}
         />
       </div>
     </div>

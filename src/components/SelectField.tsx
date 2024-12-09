@@ -12,6 +12,7 @@ type SelectFieldProps = {
   options: Option[];
   register: any; // Replace 'any' with a more specific type if possible
   onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  value?: number;
 };
 
 const SelectField: React.FC<SelectFieldProps> = ({
@@ -20,6 +21,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
   options,
   register,
   onChange,
+  value,
 }) => {
   return (
     <div>

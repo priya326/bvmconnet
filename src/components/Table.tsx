@@ -5,8 +5,11 @@ const Table = ({
 }: {
   columns: { header: string; accessor: string; className?: string }[];
   renderRow: (item: any) => React.ReactNode;
-  data: any[];
+  data: any[]; // Keep this type for TypeScript
 }) => {
+  // Fallback to an empty array if data is not an array
+  const validData = Array.isArray(data) ? data : [];
+
   return (
     <table className="mt-4 w-full">
       <thead>
@@ -18,7 +21,7 @@ const Table = ({
           ))}
         </tr>
       </thead>
-      <tbody>{data.map((item) => renderRow(item))}</tbody>
+      <tbody>{validData.map((item) => renderRow(item))}</tbody>
     </table>
   );
 };

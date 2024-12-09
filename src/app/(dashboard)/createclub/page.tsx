@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
+"use client"; // Ensures this component is client-side only
+import { addClub, getDepartment } from "@/lib/api_urls";
+import React, { useEffect, useState } from "react";
+import { decrypt } from "../../../../utils/security";
 import SelectField from "@/components/SelectField";
-import { decrypt } from "../../../utils/security";
+import { useRouter } from "next/navigation"; // Ensure useRouter is used in a client-only context
 
 interface ClubFormData {
   name: string;
@@ -20,70 +23,52 @@ interface ClubProps {
   onSubmit: (formData: ClubFormData) => void;
 }
 
-const Club = ({ type, data, onSubmit }: ClubProps) => {
-  const [formData, setFormData] = useState<ClubFormData>(
-    data || { name: "", description: "", department_id: 0, coordinator_id: 0 }
-  );
+const ClubForm = ({ type, onSubmit }: ClubProps) => {
+  const [formData, setFormData] = useState<ClubFormData>({
+    name: "",
+    description: "",
+    department_id: 0,
+    coordinator_id: 0,
+  });
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false); // Ensure component is mounted
+  const router = useRouter(); // This is safe to use now since we're in a client component
 
-  useEffect(() => {
-    setIsMounted(true); // Set to true when the component is mounted
-  }, []);
-
-  // Fetch departments when the component mounts
+  // Fetch departments on mount
   useEffect(() => {
     const fetchDepartments = async () => {
       const storedUserData =
         localStorage.getItem("usere") || localStorage.getItem("user");
-
       if (!storedUserData) {
         alert("You need to log in.");
         return;
       }
 
-      let userData;
       try {
         const decryptedData = decrypt(storedUserData);
-        userData =
+        const userData =
           typeof decryptedData === "string"
             ? JSON.parse(decryptedData)
             : decryptedData;
-      } catch {
-        alert("Invalid user data. Please log in again.");
-        return;
-      }
+        const token = userData.data?.token;
 
-      const token = userData.data.token;
-      if (!token) {
-        alert("You need to log in.");
-        return;
-      }
+        if (!token) {
+          alert("You need to log in.");
+          return;
+        }
 
-      try {
-        const response = await fetch(
-          "http://27.116.52.24:8050/getDepartments",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`, // Fixed the string template
-            },
-          }
-        );
+        const response = await fetch(getDepartment, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
-          const data = await response.json();
-          console.log("Fetched Departments:", data.data); // Log the fetched departments
-          if (data.data) {
-            setDepartments(data.data);
-          } else {
-            console.error("Unexpected response structure:", data);
-          }
+          const { data } = await response.json();
+          setDepartments(data || []);
         } else {
-          const errorData = await response.json();
-          console.error("Failed to fetch departments:", errorData.message);
           alert("Failed to fetch departments. Please try again.");
         }
       } catch (error) {
@@ -94,11 +79,10 @@ const Club = ({ type, data, onSubmit }: ClubProps) => {
       }
     };
 
-    if (isMounted) {
-      fetchDepartments(); // Fetch only if component is mounted
-    }
-  }, [isMounted]); // Ensure router is a dependency
+    fetchDepartments();
+  }, []);
 
+  // Handle form changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -111,9 +95,47 @@ const Club = ({ type, data, onSubmit }: ClubProps) => {
     setFormData({ ...formData, department_id: parseInt(value, 10) });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    const storedUserData =
+      localStorage.getItem("usere") || localStorage.getItem("user");
+
+    if (!storedUserData) {
+      alert("You need to log in.");
+      return;
+    }
+
+    try {
+      const decryptedData = decrypt(storedUserData);
+      const userData =
+        typeof decryptedData === "string"
+          ? JSON.parse(decryptedData)
+          : decryptedData;
+      const token = userData.data?.token;
+
+      if (!token) {
+        alert("You need to log in.");
+        return;
+      }
+
+      const response = await fetch(addClub, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        router.push("/list/clubs"); // Safe to use now
+      } else {
+        alert("Failed to create the club.");
+      }
+    } catch (error) {
+      console.error("Error creating club:", error);
+    }
   };
 
   return (
@@ -130,7 +152,7 @@ const Club = ({ type, data, onSubmit }: ClubProps) => {
         />
       </div>
       <div>
-        <label className="text-xs text-gray-500">Description:</label>
+        <label className="text-xs text-gray-500">Description</label>
         <input
           type="text"
           className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
@@ -140,8 +162,6 @@ const Club = ({ type, data, onSubmit }: ClubProps) => {
           required
         />
       </div>
-
-      {/* Department Dropdown */}
       <div>
         {loading ? (
           <p>Loading departments...</p>
@@ -153,28 +173,26 @@ const Club = ({ type, data, onSubmit }: ClubProps) => {
               value: department.id,
               label: department.name,
             }))}
-            register={() => {}} // This can be adjusted based on your form handling
+            register={() => {}} // Adjust based on form handling
             onChange={handleSelectChange}
           />
         )}
       </div>
-
       <div>
-        <label className="text-xs text-gray-500">Coordinator ID:</label>
+        <label className="text-xs text-gray-500">Coordinator ID</label>
         <input
           className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
           type="number"
           name="coordinator_id"
           value={formData.coordinator_id}
           onChange={handleChange}
-          required
         />
       </div>
       <button type="submit" className="bg-secondary text-white p-2 rounded-md">
-        {type === "create" ? "Create Club" : "Update Club"}
+        {type === "create" ? "Create" : "Update"}
       </button>
     </form>
   );
 };
 
-export default Club;
+export default ClubForm;

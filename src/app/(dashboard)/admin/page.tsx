@@ -1,115 +1,155 @@
 "use client";
+import React, { useState, useEffect } from "react";
 import UserCards from "@/components/UserCards";
 import CountChart from "@/components/CountChart";
 import EventsCalendar from "@/components/EventsCalendar";
-import React, { useState } from "react";
-import BarChartComponent from "@/components/BarChart";
 import MonthChart from "@/components/MonthChart";
+import { getClubs, getPastEvents } from "../../../lib/api_urls"; // Adjust API imports
+import { decrypt } from "../../../../utils/security"; // Import your decryption function
+import { getToken } from "../../../../utils/auth";
 
 interface DepartmentData {
   department: string;
   students: number;
 }
-const clubs = [
-  {
-    name: "IEEE",
-    eventsCount: 5,
-    fill: "#b2d8ff",
-    departmentData: [
-      { department: "Civil", students: 30 },
-      { department: "Computer", students: 45 },
-      { department: "Electronics", students: 20 },
-      { department: "Electrical", students: 15 },
-      { department: "Mechanical", students: 25 },
-      { department: "Production", students: 10 },
-      { department: "Electronics & Communication", students: 35 },
-      { department: "IT", students: 40 },
-    ],
-  },
-  {
-    name: "GDSC",
-    eventsCount: 1,
-    fill: "#6c769b",
-    departmentData: [
-      { department: "Civil", students: 25 },
-      { department: "Computer", students: 50 },
-      { department: "Electronics", students: 22 },
-      { department: "Electrical", students: 18 },
-      { department: "Mechanical", students: 30 },
-      { department: "Production", students: 12 },
-      { department: "Electronics & Communication", students: 40 },
-      { department: "IT", students: 45 },
-    ],
-  },
-  {
-    name: "CSI",
-    eventsCount: 2,
-    fill: "#8faece",
-    departmentData: [
-      { department: "Civil", students: 25 },
-      { department: "Computer", students: 50 },
-      { department: "Electronics", students: 22 },
-      { department: "Electrical", students: 18 },
-      { department: "Mechanical", students: 30 },
-      { department: "Production", students: 12 },
-      { department: "Electronics & Communication", students: 40 },
-      { department: "IT", students: 45 },
-    ],
-  },
-  {
-    name: "GFG",
-    eventsCount: 3,
-    fill: "#9b89b3",
-    departmentData: [
-      { department: "Civil", students: 20 },
-      { department: "Computer", students: 40 },
-      { department: "Electronics", students: 25 },
-      { department: "Electrical", students: 20 },
-      { department: "Mechanical", students: 28 },
-      { department: "Production", students: 15 },
-      { department: "Electronics & Communication", students: 38 },
-      { department: "IT", students: 42 },
-    ],
-  },
-];
-const AdminPage: React.FC = () => {
-  const [selectedClubData, setSelectedClubData] = useState<DepartmentData[]>(
-    []
-  );
 
-  const handleHover = (data: DepartmentData[]) => {
-    setSelectedClubData(data);
-  };
+interface Club {
+  name: string;
+  eventsCount: number;
+  fill: string;
+  departmentData: DepartmentData[];
+}
+
+interface EventClub {
+  id: number;
+  name: string;
+}
+
+interface EventData {
+  id: number;
+  name: string;
+  clubs: EventClub[];
+}
+
+const AdminPage: React.FC = () => {
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = getToken();
+
+      if (!token) {
+        alert("You need to log in.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch clubs data
+        const responseClubs = await fetch(getClubs, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const dataClubs = await responseClubs.json();
+        if (responseClubs.ok) {
+          console.log("Fetched Clubs Data:", dataClubs.data);
+
+          if (dataClubs.data && Array.isArray(dataClubs.data)) {
+            setClubs(dataClubs.data); // Save clubs data
+          } else {
+            console.error("Fetched data is not an array:", dataClubs.data);
+          }
+        } else {
+          const errorDataClubs = await responseClubs.json();
+          console.error("Failed to fetch clubs:", errorDataClubs.message);
+        }
+
+        // Fetch past events data
+        const responseEvents = await fetch(getPastEvents, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (responseEvents.ok) {
+          const dataEvents = await responseEvents.json();
+          console.log("Fetched Events Data:", dataEvents.data);
+
+          if (dataEvents.data && Array.isArray(dataEvents.data)) {
+            // Calculate event counts for each club
+            const updatedClubs = dataClubs.data.map(
+              (club: Club, index: number) => {
+                const eventCount = dataEvents.data.reduce(
+                  (count: number, event: EventData) => {
+                    const hasClub = event.clubs.some(
+                      (eventClub: EventClub) =>
+                        eventClub.name.toLowerCase() === club.name.toLowerCase()
+                    );
+                    return hasClub ? count + 1 : count;
+                  },
+                  0
+                );
+
+                const shadeOfBlue = `hsl(210, 100%, ${
+                  20 + ((index * 5) % 20)
+                }%)`;
+
+                return {
+                  ...club,
+                  eventsCount: eventCount,
+                  fill: shadeOfBlue, // Assign the shade of blue
+                };
+              }
+            );
+
+            setClubs(updatedClubs); // Update the clubs state with the new data
+          } else {
+            console.error(
+              "Fetched events data is not an array:",
+              dataEvents.data
+            );
+          }
+        } else {
+          const errorDataEvents = await responseEvents.json();
+          console.error("Failed to fetch events:", errorDataEvents.message);
+        }
+      } catch (error) {
+        console.error("An error occurred while fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="gap-4 flex flex-col p-4 md:flex-row">
-      {/* LEFT */}
       <div className="w-full lg:w-2/3 flex flex-col gap-8">
-        <div className=" flex gap-4 justify-between flex-wrap">
+        <div className="flex gap-4 justify-between flex-wrap">
           <UserCards type="Clubs"></UserCards>
           <UserCards type="Events"></UserCards>
           <UserCards type="Faculty Coordinators"></UserCards>
           <UserCards type="Students"></UserCards>
         </div>
-        {/* Middle */}
         <div className="flex gap-4 flex-col lg:flex-row">
-          {/* RADIAL */}
-          <div className="w-full lg:w-1/3 h-[450px]">
-            <CountChart clubs={clubs} onHover={handleHover} />
-          </div>
-          {/* LINE */}
-          <div className="w-full lg:w-2/3 h-[450px] ">
-            <BarChartComponent data={selectedClubData} />
+          <div className="w-full  h-[450px]">
+            <MonthChart />
           </div>
         </div>
-        {/* Bottom BAR GRAPH*/}
         <div className="w-full h-[500px]">
-          <MonthChart />
+          <CountChart clubs={clubs} />
         </div>
       </div>
-
-      {/* RIGHT */}
-      <div className="w-full lg:w-1/3  flex flex-col gap-8">
+      <div className="w-full lg:w-1/3 flex flex-col gap-8">
         <EventsCalendar></EventsCalendar>
       </div>
     </div>

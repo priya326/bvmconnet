@@ -25,7 +25,7 @@ const BarChartComponent: React.FC<BarChartProps> = ({ data }) => {
     <div className="bg-white rounded-xl w-full h-full p-4">
       <div className="flex justify-between items-center">
         <h1 className="font-bold text-primary">Department Attendance</h1>
-        <Image src="/moreDark.png" alt="" width={20} height={20}></Image>
+        <Image src="/moreDark.png" alt="" width={20} height={20} />
       </div>
       <div className="mt-5">
         <ResponsiveContainer width="100%" height={300}>
@@ -50,7 +50,7 @@ const BarChartComponent: React.FC<BarChartProps> = ({ data }) => {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <span className=" flex justify-center text-gray-700 font-light my-2">
+      <span className="flex justify-center text-gray-700 font-light my-2">
         Hover on PieChart to view department-wise attendance during the events
         of a club
       </span>

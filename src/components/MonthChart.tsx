@@ -23,7 +23,7 @@ const data = [
   },
   {
     name: "Mar",
-    eventcount: 0,
+    eventcount: 6,
   },
   {
     name: "Apr",

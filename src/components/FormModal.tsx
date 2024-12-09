@@ -1,125 +1,130 @@
-import { useState } from "react";
-import dynamic from "next/dynamic";
-import Image from "next/image";
-import axios from "axios";
-import { addClub } from "../lib/api_urls";
+import { useEffect, useState } from "react";
+import SelectField from "@/components/SelectField"; // Assuming SelectField is located here
+import { decrypt } from "../../utils/security";
+import { useRouter } from "next/navigation";
 
-interface ClubFormData {
+// Types
+type Department = {
+  id: number;
   name: string;
-  description: string;
-  department_id: number;
-  coordinator_id: number;
-}
-
-const Faculty = dynamic(() => import("./forms/faculty"), {
-  loading: () => <h1>Loading...</h1>,
-});
-const Club = dynamic(() => import("./forms/club"), {
-  loading: () => <h1>Loading...</h1>,
-});
-
-const forms = {
-  // faculty: (type: string, data: any, onSubmit: (formData: any) => void) => (
-  //   <Faculty type={type} data={data} onSubmit={onSubmit} />
-  // ),
-  club: (
-    type: string,
-    data: any,
-    onSubmit: (formData: ClubFormData) => void
-  ) => <Club type={type} data={data} onSubmit={onSubmit} />,
 };
 
-const FormModal = ({
-  comp,
-  type,
-  data,
-  id,
-}: {
-  comp: "faculty" | "club";
-  type: "create" | "update" | "delete";
-  data?: any;
+type Faculty = {
+  id: number;
+  name: string;
+};
+
+type Club = {
+  id: number;
+  name: string;
+  description: string;
+  department: Department;
+  faculty: Faculty;
+};
+
+type FormModalProps = {
+  type: "create" | "update";
+  data?: Club;
   id?: number;
-}) => {
-  const [open, setOpen] = useState(false);
+  onAddClub?: (club: Club) => void;
+};
 
-  // Handle club creation
-  const handleCreate = async (formData: ClubFormData) => {
-    try {
-      await axios.post(addClub, formData);
-      alert("Club added successfully!");
-      setOpen(false);
-    } catch (error) {
-      console.error(error);
-      alert("Error creating club");
+const FormModal = ({ type, data, id, onAddClub }: FormModalProps) => {
+  const router = useRouter();
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [faculties, setFaculties] = useState<Faculty[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string | number>(
+    ""
+  );
+
+  // Fetch departments from getDepartments API
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch("http://27.116.52.24:8050/getDepartments");
+        const data = await response.json();
+        setDepartments(data.data);
+      } catch (error) {
+        console.error("Failed to fetch departments:", error);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
+  // Fetch faculties based on selected department
+  useEffect(() => {
+    if (selectedDepartment) {
+      const fetchFaculties = async () => {
+        try {
+          const response = await fetch(
+            `http://27.116.52.24:8050/searchUser?department=${selectedDepartment}`
+          );
+          const data = await response.json();
+          setFaculties(data.data);
+        } catch (error) {
+          console.error("Failed to fetch faculties:", error);
+        }
+      };
+
+      fetchFaculties();
     }
-  };
+  }, [selectedDepartment]);
 
-  // Handle club update
-  const handleUpdate = async (formData: ClubFormData) => {
+  // Handle form submission
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const formData = new FormData(event.target as HTMLFormElement);
+    const newClub = {
+      name: formData.get("clubName"),
+      description: formData.get("clubDescription"),
+      department: selectedDepartment,
+      faculty: formData.get("facultyCoordinator"),
+    };
+
     try {
-      await axios.put(`/api/${comp}/update/${id}`, formData);
-      alert("Club updated successfully!");
-      setOpen(false);
-    } catch (error) {
-      console.error(error);
-      alert("Error updating club");
-    }
-  };
+      const response = await fetch(
+        "http://27.116.52.24:8050/addClubCoordinator",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token is stored
+          },
+          body: JSON.stringify(newClub),
+        }
+      );
 
-  const Form = () => {
-    return type === "delete" && id ? (
-      <form className="p-4 flex flex-col gap-4">
-        <span className="text-center font-medium">
-          Are you sure you want to delete this {comp}?
-        </span>
-        <button
-          className="bg-red-700 text-white px-4 py-2 rounded-md w-max self-center"
-          onClick={() => setOpen(false)}
-        >
-          Delete
-        </button>
-      </form>
-    ) : type === "create" || type === "update" ? (
-      forms[comp](type, data, type === "create" ? handleCreate : handleUpdate)
-    ) : (
-      "form not found"
-    );
+      if (response.ok) {
+        const addedClub = await response.json();
+        onAddClub?.(addedClub.data); // Update club list with new club
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to add club:", errorData.message);
+      }
+    } catch (error) {
+      console.error("Error adding club:", error);
+    }
   };
 
   return (
-    <>
-      <button
-        className={`w-8 h-8 flex items-center justify-center rounded-full ${
-          type === "create"
-            ? "bg-[#C1E1C1]"
-            : type === "update"
-            ? "bg-[#b4a8ff]"
-            : "bg-[#ff746c]"
-        }`}
-        onClick={() => setOpen(true)}
-      >
-        <Image
-          src={`/${type}.png`}
-          alt={`${type} icon`}
-          width={16}
-          height={16}
-        />
-      </button>
+    <form onSubmit={handleSubmit}>
+      <h1>{type === "create" ? "Add New Club" : "Update Club"}</h1>
 
-      {open && (
-        <div className="w-screen h-screen absolute left-0 top-0 bg-black bg-opacity-60 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-md p-5 relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]">
-            <Form />
-            <div
-              className="absolute top-4 right-4 cursor-pointer"
-              onClick={() => setOpen(false)}
-            >
-              <Image src="/close.png" alt="close" width={14} height={14} />
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      {/* Club Name */}
+      <div>
+        <label htmlFor="clubName">Club Name</label>
+        <input type="text" id="clubName" name="clubName" required />
+      </div>
+
+      {/* Club Description */}
+      <div>
+        <label htmlFor="clubDescription">Club Description</label>
+        <textarea id="clubDescription" name="clubDescription" required />
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
   );
 };
 

@@ -7,6 +7,7 @@ import { decrypt } from "../../../../../utils/security";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getPastEvents } from "@/lib/api_urls";
+import { getToken } from "../../../../../utils/auth";
 
 type Event = {
   eventId: number;
@@ -37,11 +38,12 @@ const columns = [
   },
 ];
 
-const FacultyListPage = () => {
+const EventsList = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setIsMounted(true);
@@ -49,27 +51,7 @@ const FacultyListPage = () => {
   }, []);
 
   const fetchData = async () => {
-    const storedUserData =
-      localStorage.getItem("usere") || localStorage.getItem("user");
-    if (!storedUserData) {
-      alert("You need to log in.");
-      router.push("/sign-in");
-      return;
-    }
-
-    let userData;
-    try {
-      const decryptedData = decrypt(storedUserData);
-      userData =
-        typeof decryptedData === "string"
-          ? JSON.parse(decryptedData)
-          : decryptedData;
-    } catch (error) {
-      alert("Invalid user data. Please log in again.");
-      return;
-    }
-
-    const token = userData.data.token;
+    const token = getToken();
     if (!token) {
       alert("You need to log in.");
       router.push("/sign-in");
@@ -120,7 +102,11 @@ const FacultyListPage = () => {
       setLoading(false); // End loading state
     }
   };
-
+  const filteredEvents = events.filter((event) =>
+    [event.name, event.club, event.date].some((field) =>
+      field.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
   const renderRow = (item: Event) => (
     <tr
       key={item.eventId}
@@ -157,7 +143,10 @@ const FacultyListPage = () => {
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">Events</h1>
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
+          <TableSearch
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           <div className="flex items-center gap-4 self-end">
             <button className="w-8 h-8 rounded-full items-center flex justify-center bg-light">
               <Image src="/filter.png" alt="Filter" width={14} height={14} />
@@ -173,7 +162,7 @@ const FacultyListPage = () => {
       {loading ? (
         <p>Loading events...</p> // Show loading text while fetching data
       ) : (
-        <Table columns={columns} renderRow={renderRow} data={events} />
+        <Table columns={columns} renderRow={renderRow} data={filteredEvents} />
       )}
 
       {/* Pagination */}
@@ -182,4 +171,4 @@ const FacultyListPage = () => {
   );
 };
 
-export default FacultyListPage;
+export default EventsList;

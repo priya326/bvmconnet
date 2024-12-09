@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; // Import useRouter from next/navigation
-import { login } from "../../lib/api_urls";
+
 import "react-toastify/dist/ReactToastify.css";
 import { encrypt } from "../../../utils/security";
 import CustomToast, { showToast } from "@/components/Toast";
-
+import { login } from "@/lib/api_urls";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

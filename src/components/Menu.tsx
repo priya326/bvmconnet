@@ -34,7 +34,7 @@ const menuItems = [
         icon: "/attendance.png",
         label: "Permission",
         href: "/list/permission",
-        visible: ["hod"],
+        visible: ["hod", "admin"],
       },
     ],
   },
